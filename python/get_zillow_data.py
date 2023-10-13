@@ -197,6 +197,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Get city house data from Zillow")
     parser.add_argument("--cities", required=True, help="City Name")
     parser.add_argument("--status", default="ForSale", help="[ForSale|RecentlySold]")
-    parser.add_argument("--days", default=7, help="recent sold days")
+    parser.add_argument("--days", default=7, help="recent sold days, only used for RecentlySold option")
     args = parser.parse_args()
     main(args)
