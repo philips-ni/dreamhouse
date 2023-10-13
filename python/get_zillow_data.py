@@ -15,11 +15,14 @@ load_dotenv()
 if os.environ.get("X_RAPIDAPI_KEY") is None:
     raise Exception("Envionment variable X_RAPIDAPI_KEY is not set")
 
+STATE = "ca"
+if os.environ.get("STATE") is not None:
+    STATE = os.environ.get("STATE")
 
-baseUrl = "https://zillow-com1.p.rapidapi.com"
+API_BASEURL = "https://zillow-com1.p.rapidapi.com"
+ZILLOW_BASEURL = "https://zillow.com"
 
-
-headers = {
+HEADERS = {
     "X-RapidAPI-Key": os.environ.get("X_RAPIDAPI_KEY"),
     "X-RapidAPI-Host": "zillow-com1.p.rapidapi.com",
 }
@@ -53,9 +56,9 @@ def getZipCode(address):
 
 def getDetailByZpid(zpid):
     time.sleep(1)
-    url = f"{baseUrl}/property"
+    url = f"{API_BASEURL}/property"
     querystring = {"zpid": zpid}
-    response = requests.get(url, headers=headers, params=querystring)
+    response = requests.get(url, headers=HEADERS, params=querystring)
     responseJson = response.json()
     # print(responseJson)
     addressInfo = responseJson["address"]
@@ -77,6 +80,8 @@ def getDetailByZpid(zpid):
     pricePerFt = round(price / livingArea, 2)
     listingPrice = -1
     historyEntries = responseJson["priceHistory"]
+    pathLink = responseJson["url"]
+    link = f"{ZILLOW_BASEURL}/{pathLink}"
 
     for entry in historyEntries:
         if entry["event"] == "Listed for sale":
@@ -101,7 +106,59 @@ def getDetailByZpid(zpid):
         "rentZestimate": rentZestimate,
         "propertyTaxRate": propertyTaxRate,
         "yearBuilt": yearBuilt,
+        "link": link,
     }
+
+
+def getBasicData(cities, statusType):
+    querystring = {
+        "home_type": "Houses",
+        "bedsMin": 3,
+        "sort": "Price_High_Low",
+        "status_type": "ForSale",
+    }
+    allProps = []
+    url = f"{API_BASEURL}/propertyExtendedSearch"
+    cities_list = cities.split(",")
+    for city in cities_list:
+        queryWithPage = querystring.copy()
+        queryWithPage["location"] = f"{city}, {STATE}"
+        pageIdx = 1
+        totalPages = 1000
+        while pageIdx <= totalPages:
+            queryWithPage["page"] = pageIdx
+            response = requests.get(url, headers=HEADERS, params=queryWithPage)
+            responseJson = response.json()
+            props = responseJson["props"]
+            keysToExtract = [
+                "price",
+                "zestimate",
+                "livingArea",
+                "lotAreaValue",
+                "zpid",
+                "rentZestimate",
+                "bedrooms",
+                "propertyType",
+                "address",
+                "dateSold",
+            ]
+            # Creating a new dictionary with only the selected keys
+            keyProps = []
+            for prop in props:
+                keyProp = {key: prop[key] for key in keysToExtract}
+                zipCode = getZipCode(prop["address"])
+                keyProp["zipCode"] = zipCode
+                keyProp["city"] = city
+                pricePerFt = round(prop["price"] / prop["livingArea"], 2)
+                keyProp["pricePerFt"] = pricePerFt
+                keyProps.append(keyProp)
+            allProps.extend(keyProps)
+            totalPages = responseJson["totalPages"]
+            pageIdx += 1
+
+    formatted_date = datetime.now().strftime("%y%m%d")
+    outputFile = f"{statusType.lower()}_{formatted_date}_basic.csv"
+    write_to_csv(allProps, outputFile)
 
 
 def getForSaleData(cities):
@@ -112,18 +169,19 @@ def getForSaleData(cities):
         "status_type": "ForSale",
     }
     allProps = []
-    url = f"{baseUrl}/propertyExtendedSearch"
+    url = f"{API_BASEURL}/propertyExtendedSearch"
     cities_list = cities.split(",")
     zpids = []
     for city in cities_list:
         queryWithPage = querystring.copy()
-        queryWithPage["location"] = f"{city}, ca"
+        queryWithPage["location"] = f"{city}, {STATE}"
         pageIdx = 1
         totalPages = 1000
         while pageIdx <= totalPages:
             queryWithPage["page"] = pageIdx
-            response = requests.get(url, headers=headers, params=queryWithPage)
+            response = requests.get(url, headers=HEADERS, params=queryWithPage)
             responseJson = response.json()
+            # print(responseJson)
             props = responseJson["props"]
             for prop in props:
                 zpids.append(prop["zpid"])
@@ -153,17 +211,17 @@ def getRecentSoldData(cities, recentDays):
         "soldInLast": str(recentDays),
         "status_type": "RecentlySold",
     }
-    url = f"{baseUrl}/propertyExtendedSearch"
+    url = f"{API_BASEURL}/propertyExtendedSearch"
     allProps = []
     cities_list = cities.split(",")
     for city in cities_list:
         queryWithPage = querystring.copy()
-        queryWithPage["location"] = f"{city}, ca"
+        queryWithPage["location"] = f"{city}, {STATE}"
         pageIdx = 1
         totalPages = 1000
         while pageIdx <= totalPages:
             queryWithPage["page"] = pageIdx
-            response = requests.get(url, headers=headers, params=queryWithPage)
+            response = requests.get(url, headers=HEADERS, params=queryWithPage)
             # print(response.status_code)
             responseJson = response.json()
             # print(responseJson)
@@ -184,19 +242,33 @@ def main(args):
     cities = args.cities
     statusType = args.status
     recentDays = args.days
+    mode = args.mode
     if statusType not in ["ForSale", "RecentlySold"]:
         print(f"Incorrect status: {statusType}")
         sys.exit(-1)
+    if mode not in ["basic", "advanced"]:
+        print(f"Incorrect mode: {mode}")
+        sys.exit(-1)
+
     if statusType == "ForSale":
-        getForSaleData(cities)
+        if mode == "basic":
+            getBasicData(cities, statusType)
+        else:
+            getForSaleData(cities)
     else:
-        getRecentSoldData(cities, recentDays)
+        if mode == "basic":
+            getBasicData(cities, statusType)
+        else:
+            getRecentSoldData(cities, recentDays)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Get city house data from Zillow")
     parser.add_argument("--cities", required=True, help="City Name")
     parser.add_argument("--status", default="ForSale", help="[ForSale|RecentlySold]")
-    parser.add_argument("--days", default=7, help="recent sold days, only used for RecentlySold option")
+    parser.add_argument("--mode", default="basic", help="[basic|advanced]")
+    parser.add_argument(
+        "--days", default=7, help="recent sold days, only used for RecentlySold option"
+    )
     args = parser.parse_args()
     main(args)
