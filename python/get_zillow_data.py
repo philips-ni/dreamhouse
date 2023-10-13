@@ -129,6 +129,10 @@ def getBasicData(cities, statusType):
             queryWithPage["page"] = pageIdx
             response = requests.get(url, headers=HEADERS, params=queryWithPage)
             responseJson = response.json()
+            if "props" not in responseJson:
+                raise Exception(
+                    f"Failed to GET {url}, please check your API token in .env"
+                )
             props = responseJson["props"]
             keysToExtract = [
                 "price",
@@ -181,6 +185,10 @@ def getForSaleData(cities):
             queryWithPage["page"] = pageIdx
             response = requests.get(url, headers=HEADERS, params=queryWithPage)
             responseJson = response.json()
+            if "props" not in responseJson:
+                raise Exception(
+                    f"Failed to GET {url}, please check your API token in .env"
+                )
             # print(responseJson)
             props = responseJson["props"]
             for prop in props:
@@ -224,6 +232,10 @@ def getRecentSoldData(cities, recentDays):
             response = requests.get(url, headers=HEADERS, params=queryWithPage)
             # print(response.status_code)
             responseJson = response.json()
+            if "props" not in responseJson:
+                raise Exception(
+                    f"Failed to GET {url}, please check your API token in .env"
+                )
             # print(responseJson)
             props = responseJson["props"]
             # print(props[0])
