@@ -110,13 +110,18 @@ def getDetailByZpid(zpid):
     }
 
 
-def getBasicData(cities, statusType):
+def getBasicData(cities, statusType, days):
     querystring = {
         "home_type": "Houses",
         "bedsMin": 3,
         "sort": "Price_High_Low",
-        "status_type": "ForSale",
+        "maxPrice": 1000000,
+        "minPrice": 800001,
+        "status_type": statusType,
     }
+    if statusType == "RecentlySold":
+        querystring["soldInLast"] = days
+
     allProps = []
     url = f"{API_BASEURL}/propertyExtendedSearch"
     cities_list = cities.split(",")
@@ -126,7 +131,9 @@ def getBasicData(cities, statusType):
         pageIdx = 1
         totalPages = 1000
         while pageIdx <= totalPages:
+            print(f"pageIdx: {pageIdx}")
             queryWithPage["page"] = pageIdx
+            time.sleep(1)
             response = requests.get(url, headers=HEADERS, params=queryWithPage)
             responseJson = response.json()
             if "props" not in responseJson:
@@ -144,16 +151,21 @@ def getBasicData(cities, statusType):
                 "bedrooms",
                 "propertyType",
                 "address",
-                "dateSold",
             ]
             # Creating a new dictionary with only the selected keys
             keyProps = []
             for prop in props:
                 keyProp = {key: prop[key] for key in keysToExtract}
-                zipCode = getZipCode(prop["address"])
-                keyProp["zipCode"] = zipCode
+                zipcode = getZipCode(prop["address"])
+                keyProp["zipcode"] = zipcode
                 keyProp["city"] = city
-                pricePerFt = round(prop["price"] / prop["livingArea"], 2)
+                dateSoldTimeStamp = prop["dateSold"] / 1000
+                dateSold = datetime.fromtimestamp(dateSoldTimeStamp).strftime('%Y-%m-%d')
+                keyProp["dateSold"] = dateSold
+                if prop["price"] == None or prop["livingArea"] == None:
+                    pricePerFt = -1
+                else:
+                    pricePerFt = round(prop["price"] / prop["livingArea"], 2)
                 keyProp["pricePerFt"] = pricePerFt
                 keyProps.append(keyProp)
             allProps.extend(keyProps)
@@ -201,14 +213,6 @@ def getForSaleData(cities):
     formatted_date = datetime.now().strftime("%y%m%d")
     outputFile = f"forsale_{formatted_date}.csv"
     write_to_csv(allProps, outputFile)
-
-
-def toDateStr(timestamp):
-    timestamp = (
-        timestamp / 1000
-    )  # Convert to seconds since the timestamp is in milliseconds
-    dt_object = datetime.fromtimestamp(timestamp)
-    return dt_object.strftime("%y%m%d")
 
 
 def getRecentSoldData(cities, recentDays):
@@ -264,12 +268,12 @@ def main(args):
 
     if statusType == "ForSale":
         if mode == "basic":
-            getBasicData(cities, statusType)
+            getBasicData(cities, statusType, recentDays)
         else:
             getForSaleData(cities)
     else:
         if mode == "basic":
-            getBasicData(cities, statusType)
+            getBasicData(cities, statusType, recentDays)
         else:
             getRecentSoldData(cities, recentDays)
 
