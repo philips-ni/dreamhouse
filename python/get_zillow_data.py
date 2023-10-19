@@ -115,8 +115,6 @@ def getBasicData(cities, statusType, days):
         "home_type": "Houses",
         "bedsMin": 3,
         "sort": "Price_High_Low",
-        "maxPrice": 1000000,
-        "minPrice": 800001,
         "status_type": statusType,
     }
     if statusType == "RecentlySold":
@@ -160,9 +158,11 @@ def getBasicData(cities, statusType, days):
                 keyProp["zipcode"] = zipcode
                 keyProp["city"] = city
                 dateSoldTimeStamp = prop["dateSold"] / 1000
-                dateSold = datetime.fromtimestamp(dateSoldTimeStamp).strftime('%Y-%m-%d')
+                dateSold = datetime.fromtimestamp(dateSoldTimeStamp).strftime(
+                    "%Y-%m-%d"
+                )
                 keyProp["dateSold"] = dateSold
-                if prop["price"] == None or prop["livingArea"] == None:
+                if prop["price"] is None or prop["livingArea"] is None:
                     pricePerFt = -1
                 else:
                     pricePerFt = round(prop["price"] / prop["livingArea"], 2)

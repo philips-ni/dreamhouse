@@ -28,6 +28,7 @@ HEADERS = {
 
 MARKED_CONFIG_FILE = "marked.csv"
 
+
 def writeToCsv(json_content, csv_filename):
     # Opening the file with write permission
     with open(csv_filename, mode="w", newline="", encoding="utf-8") as file:
@@ -85,8 +86,10 @@ def getDetailByZpid(zpid):
     pathLink = responseJson["url"]
     link = f"{ZILLOW_BASEURL}/{pathLink}"
     latestEntry = historyEntries[0]
-    latestEvent = f"""{latestEntry["date"]} {latestEntry["event"]} """ + \
-        f"""{latestEntry["price"]}"""
+    latestEvent = (
+        f"""{latestEntry["date"]} {latestEntry["event"]} """
+        + f"""{latestEntry["price"]}"""
+    )
 
     for entry in historyEntries:
         if entry["event"] == "Listed for sale":
@@ -112,7 +115,7 @@ def getDetailByZpid(zpid):
         "propertyTaxRate": propertyTaxRate,
         "yearBuilt": yearBuilt,
         "link": link,
-        "latest_event": latestEvent
+        "latest_event": latestEvent,
     }
 
 
