@@ -1,2 +1,8 @@
 # ignore ALL emacs temp files
 *~
+
+# R project related files
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
