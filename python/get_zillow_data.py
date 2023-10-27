@@ -83,6 +83,20 @@ def getDetailByZpid(zpid):
     pathLink = responseJson["url"]
     link = f"{ZILLOW_BASEURL}/{pathLink}"
 
+    schools = responseJson["schools"]
+    schoolsE = ""
+    schoolsM = ""
+    schoolsH = ""
+    for school in schools:
+        if school["level"] == "Elementary":
+            schoolsE = f"""{school["rating"]},{school["name"]}"""
+            continue
+        if school["level"] == "Middle":
+            schoolsM = f"""{school["rating"]},{school["name"]}"""
+            continue
+        if school["level"] == "High":
+            schoolsH = f"""{school["rating"]},{school["name"]}"""
+
     for entry in historyEntries:
         if entry["event"] == "Listed for sale":
             listingPrice = entry["price"]
@@ -106,6 +120,9 @@ def getDetailByZpid(zpid):
         "rentZestimate": rentZestimate,
         "propertyTaxRate": propertyTaxRate,
         "yearBuilt": yearBuilt,
+        "schoolsE": schoolsE,
+        "schoolsM": schoolsM,
+        "schoolsH": schoolsH,
         "link": link,
     }
 

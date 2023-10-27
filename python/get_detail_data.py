@@ -1,3 +1,4 @@
+import argparse
 import requests
 import csv
 import json
@@ -50,8 +51,8 @@ def writeToCsv(json_content, csv_filename):
             print("No data to write!")
 
 
-def getMarkedZpids():
-    with open(MARKED_CONFIG_FILE, "r") as csvfile:
+def getMarkedZpids(configPath):
+    with open(configPath, "r") as csvfile:
         reader = csv.DictReader(csvfile)
         zpids = [int(row["zpid"]) for row in reader]
     return zpids
@@ -136,16 +137,20 @@ def getDetailByZpid(zpid):
     }
 
 
-def main():
-    markedZpids = getMarkedZpids()
+def main(args):
+    configFilePath = args.config
+    markedZpids = getMarkedZpids(configFilePath)
     detailInfos = []
     for zpid in markedZpids:
         detailInfo = getDetailByZpid(zpid)
         detailInfos.append(detailInfo)
     formatted_date = datetime.now().strftime("%y%m%d")
-    outputFile = f"marked_detail_{formatted_date}.csv"
+    outputFile = f"detail_{formatted_date}.csv"
     writeToCsv(detailInfos, outputFile)
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Get city house data from Zillow")
+    parser.add_argument("--config", required=True, help="config file path")
+    args = parser.parse_args()
+    main(args)
