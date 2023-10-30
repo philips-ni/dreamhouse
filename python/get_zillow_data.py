@@ -7,7 +7,13 @@ import json
 import re
 from datetime import datetime
 import time
+from google.cloud import storage
 from dotenv import load_dotenv
+
+
+BUCKET_NAME = "dreamhome1029"
+# The date in filename doesn't mean anything, will rename it later.
+DESTINATION_BLOB_NAME = "forsale_231028.csv"
 
 # Load environment variables from .env file
 load_dotenv()
@@ -26,6 +32,21 @@ HEADERS = {
     "X-RapidAPI-Key": os.environ.get("X_RAPIDAPI_KEY"),
     "X-RapidAPI-Host": "zillow-com1.p.rapidapi.com",
 }
+
+
+def uploadBlob(source_file_name):
+    """Uploads a file to the bucket."""
+    # Set the environment variable for authentication
+    # Create a client
+    storage_client = storage.Client()
+    # Get the bucket
+    bucket = storage_client.bucket(BUCKET_NAME)
+
+    # Create a blob and upload the file
+    blob = bucket.blob(DESTINATION_BLOB_NAME)
+    blob.upload_from_filename(source_file_name)
+
+    print(f"File {source_file_name} uploaded to gs://{BUCKET_NAME}/{DESTINATION_BLOB_NAME}.")
 
 
 def write_to_csv(json_content, csv_filename):
@@ -192,6 +213,7 @@ def getBasicData(cities, statusType, days):
     formatted_date = datetime.now().strftime("%y%m%d")
     outputFile = f"{statusType.lower()}_{formatted_date}_basic.csv"
     write_to_csv(allProps, outputFile)
+    return outputFile
 
 
 def getForSaleData(cities):
@@ -230,6 +252,7 @@ def getForSaleData(cities):
     formatted_date = datetime.now().strftime("%y%m%d")
     outputFile = f"forsale_{formatted_date}.csv"
     write_to_csv(allProps, outputFile)
+    return outputFile
 
 
 def getRecentSoldData(cities, recentDays):
@@ -269,6 +292,7 @@ def getRecentSoldData(cities, recentDays):
     formatted_date = datetime.now().strftime("%y%m%d")
     outputFile = f"sold_{formatted_date}.csv"
     write_to_csv(allProps, outputFile)
+    return outputFile
 
 
 def main(args):
@@ -285,10 +309,18 @@ def main(args):
 
     if statusType == "ForSale":
         if mode == "basic":
-            getBasicData(cities, statusType, recentDays)
+            if args.upload:
+                print("Upload option is not available for this mode")
+            else:
+                getBasicData(cities, statusType, recentDays)
         else:
-            getForSaleData(cities)
+            outputFile = getForSaleData(cities)
+            if args.upload:
+                uploadBlob(outputFile)
     else:
+        if args.upload:
+            print("Upload option is not available for this mode")
+            return
         if mode == "basic":
             getBasicData(cities, statusType, recentDays)
         else:
@@ -303,5 +335,6 @@ if __name__ == "__main__":
     parser.add_argument(
         "--days", default=7, help="recent sold days, only used for RecentlySold option"
     )
+    parser.add_argument('--upload', action='store_true', help="Enable Upload to GCP bucket mode, only work for ForSale advanced mode")
     args = parser.parse_args()
     main(args)
