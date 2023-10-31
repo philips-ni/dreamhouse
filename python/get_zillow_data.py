@@ -284,6 +284,7 @@ def getForSaleData(cities):
     for zpid in zpids:
         if zpid in oldZpids:
             row = oldDf[oldDf["zpid"] == zpid]
+            logger.info(f"skip existing {zpid}")
             propInfo = {
                 "zpid": zpid,
                 "address": row["address"].values[0],
@@ -293,10 +294,12 @@ def getForSaleData(cities):
                 "price": row["price"].values[0],
                 "pricePerFt": row["pricePerFt"].values[0],
                 "listingPrice": row["listingPrice"].values[0],
+                "livingArea": row["livingArea"].values[0],
                 "lotSize": row["lotSize"].values[0],
                 "zestimate": row["zestimate"].values[0],
                 "bedrooms": row["bedrooms"].values[0],
                 "datePosted": row["datePosted"].values[0],
+                "dateSold": row["dateSold"].values[0],                
                 "stories": row["stories"].values[0],
                 "rentZestimate": row["rentZestimate"].values[0],
                 "propertyTaxRate": row["propertyTaxRate"].values[0],
@@ -310,6 +313,7 @@ def getForSaleData(cities):
             propInfo = getDetailByZpid(zpid)
         allProps.append(propInfo)
 
+    # print(allProps)
     write_to_csv(allProps, inventoryTodayFile)
     return inventoryTodayFile
 
