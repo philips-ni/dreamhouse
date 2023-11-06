@@ -87,8 +87,9 @@ def get_summary_df(csv_file):
 
     df["datePosted"] = pd.to_datetime(df["datePosted"])
     df["zipcode"] = df["zipcode"].astype(str)
-    df["onMarketDays"] = (datetime.now() - df["datePosted"]).dt.days
-    df["collectedDate"] = pd.to_datetime(collectedDate)
+    df["collectedDate"] = pd.to_datetime(collectedDate)    
+    df["onMarketDays"] = (df["collectedDate"] - df["datePosted"]).dt.days
+
     df["price"] = df["price"].replace("[\$,]", "", regex=True).astype(float)
 
     # Group by 'zipcode' and calculate median and count
