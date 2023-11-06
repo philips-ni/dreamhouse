@@ -299,7 +299,7 @@ def getForSaleData(cities):
                 "zestimate": row["zestimate"].values[0],
                 "bedrooms": row["bedrooms"].values[0],
                 "datePosted": row["datePosted"].values[0],
-                "dateSold": row["dateSold"].values[0],                
+                "dateSold": row["dateSold"].values[0],
                 "stories": row["stories"].values[0],
                 "rentZestimate": row["rentZestimate"].values[0],
                 "propertyTaxRate": row["propertyTaxRate"].values[0],
