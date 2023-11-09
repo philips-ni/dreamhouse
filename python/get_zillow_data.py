@@ -123,7 +123,9 @@ def getDetailByZpid(zpid):
     zestimate = responseJson["zestimate"]
     homeStatus = responseJson["homeStatus"]
     price = responseJson["price"]
-    pricePerFt = round(price / livingArea, 2)
+    pricePerFt = -1
+    if livingArea != 0:
+        pricePerFt = round(price / livingArea, 2)
     listingPrice = -1
     historyEntries = responseJson["priceHistory"]
     pathLink = responseJson["url"]
